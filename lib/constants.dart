@@ -33,3 +33,18 @@ const kInputTextFieldDecoration = InputDecoration(
     borderRadius: BorderRadius.all(Radius.circular(32.0)),
   ),
 );
+
+const kFireBaseDBName = 'messages';
+const kFireBaseDBSenderLabel = 'sender';
+const kFireBaseDBTextLabel = 'text';
+const kFireBaseDBTimestamp = 'timestamp';
+
+const kMyBubbleRadius = BorderRadius.only(
+    topLeft: Radius.circular(30.0),
+    bottomRight: Radius.circular(30.0),
+    bottomLeft: Radius.circular(30.0));
+
+const kOtherUserBubbleRadius = BorderRadius.only(
+    topRight: Radius.circular(30.0),
+    bottomRight: Radius.circular(30.0),
+    bottomLeft: Radius.circular(30.0));

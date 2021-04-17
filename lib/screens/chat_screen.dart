@@ -1,11 +1,8 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:flutter/material.dart';
+import 'package:flash_chat/components/message_stream.dart';
 import 'package:flash_chat/constants.dart';
-
-const kFireBaseDBName = 'messages';
-const kFireBaseDBSenderLabel = 'sender';
-const kFireBaseDBTextLabel = 'label';
+import 'package:flutter/material.dart';
 
 class ChatScreen extends StatefulWidget {
   static const String id = 'chat_screen';
@@ -15,6 +12,7 @@ class ChatScreen extends StatefulWidget {
 }
 
 class _ChatScreenState extends State<ChatScreen> {
+  final messageTextController = TextEditingController();
   final _auth = FirebaseAuth.instance;
   final _fireStore = FirebaseFirestore.instance;
   User loggedUser;
@@ -35,20 +33,6 @@ class _ChatScreenState extends State<ChatScreen> {
       }
     } on Exception catch (e) {
       print(e);
-    }
-  }
-
-  // void getMessages() async {
-  //   final messages = await _fireStore.collection(kFireBaseDBName).get();
-  //   messages.docs.forEach((element) => print(element.data()));
-  // }
-
-  void messagesStream() async {
-    await for (var snapshot
-        in _fireStore.collection(kFireBaseDBName).snapshots()) {
-      for (var message in snapshot.docs) {
-        print(message.data());
-      }
     }
   }
 
@@ -73,30 +57,9 @@ class _ChatScreenState extends State<ChatScreen> {
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: <Widget>[
-            StreamBuilder<QuerySnapshot>(
-              stream: _fireStore.collection(kFireBaseDBName).snapshots(),
-              builder: (context, snapshot) {
-                if (!snapshot.hasData) {
-                  return Center(
-                    child: CircularProgressIndicator(
-                      backgroundColor: Colors.lightBlue,
-                    ),
-                  );
-                }
-                final messages = snapshot.data.docs;
-                List<MessageBubble> messageList = messages.map((message) {
-                  String messageText = message.data()[kFireBaseDBTextLabel];
-                  String messageSender = message.data()[kFireBaseDBSenderLabel];
-                  return MessageBubble(
-                      messageText: messageText, messageSender: messageSender);
-                }).toList(growable: true);
-                return Expanded(
-                    child: ListView(
-                  children: messageList,
-                  padding:
-                      EdgeInsets.symmetric(horizontal: 10.0, vertical: 20.0),
-                ));
-              },
+            MessageStream(
+              fireStore: _fireStore,
+              loggedUserEmail: loggedUser.email,
             ),
             Container(
               decoration: kMessageContainerDecoration,
@@ -105,6 +68,7 @@ class _ChatScreenState extends State<ChatScreen> {
                 children: <Widget>[
                   Expanded(
                     child: TextField(
+                      controller: messageTextController,
                       onChanged: (value) {
                         chatMessage = value;
                       },
@@ -113,9 +77,11 @@ class _ChatScreenState extends State<ChatScreen> {
                   ),
                   FlatButton(
                     onPressed: () {
+                      messageTextController.clear();
                       _fireStore.collection(kFireBaseDBName).add({
                         kFireBaseDBSenderLabel: loggedUser.email,
-                        kFireBaseDBTextLabel: chatMessage
+                        kFireBaseDBTextLabel: chatMessage,
+                        kFireBaseDBTimestamp: FieldValue.serverTimestamp()
                       });
                     },
                     child: Text(
@@ -129,25 +95,6 @@ class _ChatScreenState extends State<ChatScreen> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class MessageBubble extends StatelessWidget {
-  const MessageBubble({
-    Key key,
-    @required this.messageText,
-    @required this.messageSender,
-  }) : super(key: key);
-
-  final String messageText;
-  final String messageSender;
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      '$messageText from $messageSender',
-      style: TextStyle(fontSize: 50.0),
     );
   }
 }
